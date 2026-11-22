@@ -49,6 +49,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -488,9 +489,14 @@ fun ForumPage(
     val account = LocalAccount.current
     // 记忆落地方案：进吧后默认回到上次浏览的 tab，符合用户「接着上次看」的预期。
     // 首次进吧（无记忆）仍落「最新」；只有吧存在「热门」tab 时，「热门」才有资格被记住。
-    // navTabInfo 与 forumInfo 同源于一次 Load.Success，pager 首次组合时记忆与 hasHotTab
-    // 已是最终值，不存在先渲染再纠正的中间态。
-    val initialTab by remember {
+    //
+    // 时序陷阱（issue #35 复发根因）：ForumPage 首次组合早于 Load.Success，此刻 navTabInfo
+    // 还是 null——hasHotTab=false、generalTabs 为空，latestIndex/totalPageCount 都是中间态：
+    // 有热门吧的真实布局里「最新」在 index 1，中间态却算出 0，pager 便落在热门页。
+    // pager 内容在 forumInfo 就绪前不渲染，用户此前不可能翻页，因此用 key(hasHotTab,
+    // generalTabs.size) 在 tab 布局定型的同一帧重建 pagerState，initialPage 按最终布局取值；
+    // 落盘记忆也等数据就绪后才放行，避免中间态把上次 tab 覆写成 0。
+    val initialTab by remember(forumName, hasHotTab, generalTabs.size) {
         mutableIntStateOf(
             getLastTabIndex(context, forumName).let { lastTab ->
                 when {
@@ -501,15 +507,17 @@ fun ForumPage(
             }
         )
     }
-    val pagerState = rememberPagerState(
-        initialPage = initialTab,
-        pageCount = { totalPageCount }
-    )
+    val pagerState = key(hasHotTab, generalTabs.size) {
+        rememberPagerState(
+            initialPage = initialTab,
+            pageCount = { totalPageCount }
+        )
+    }
     val hotListState = rememberLazyListState()
     val latestListState = rememberLazyListState()
     val goodListState = rememberLazyListState()
 
-    val currentPage by remember {
+    val currentPage by remember(pagerState) {
         derivedStateOf {
             pagerState.currentPage
         }
@@ -517,7 +525,7 @@ fun ForumPage(
 
     // 记住上次浏览的 tab，下次进吧直接回到该 tab
     LaunchedEffect(currentPage) {
-        if (currentPage != initialTab) {
+        if (forumInfo != null && currentPage != initialTab) {
             setLastTabIndex(context, forumName, currentPage)
         }
     }
@@ -558,13 +566,16 @@ fun ForumPage(
         derivedStateOf { heightOffset == 0f }
     }
 
-    val enablePullToRefresh by remember {
+    val enablePullToRefresh by remember(pagerState, currentListState, generalStart) {
+        // pagerState 会随 tab 布局定型重建，currentPage 委托随之换新；generalStart/currentListState
+        // 也是数据就绪后才定型。一并作 remember key，确保 derivedStateOf 捕获的都是最终值。
         derivedStateOf { currentPage < generalStart && isListAtTop && isHeaderExpanded }
     }
 
     // 落地页已由 initialTab（上次记忆）决定：热门排在 index 0，有热门时第 0 页就是热门页，
     // 没有热门时第 0 页是最新页。navTabInfo 与 forumInfo 来自同一个 Load.Success（ForumViewModel），
-    // pager 首次组合时记忆与 hasHotTab 已是最终值，不需要二次校正。
+    // 但 pagerState 的创建早于数据就绪，靠 key(hasHotTab, generalTabs.size) 在布局定型帧重建来
+    // 拿到最终 initialPage（见上方注释），因此不需要二次 scrollToPage 校正。
 
     val isShowTopBarArea by remember {
         derivedStateOf {
