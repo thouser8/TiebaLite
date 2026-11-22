@@ -55,6 +55,9 @@ import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onEvent
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
+import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.getBoolean
+import com.huanchengfly.tieba.post.putBoolean
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
@@ -204,7 +207,14 @@ private fun ThreadList(
     val (pinned, normal) = remember(items) {
         items.partition { it.thread.get { isTop } == 1 }
     }
-    var pinnedExpanded by rememberSaveable(forumName) { mutableStateOf(true) }
+    val context = LocalContext.current
+    // 折叠状态按吧记忆（issue #28 评论实测：退出吧再进不记忆）：
+    // rememberSaveable 只活在当前导航条目内，退出吧即随条目销毁，下次进吧必然回到展开。
+    // 与 ForumPage 的 lastTabIndex 同款方案——初值同步读 DataStore，切换即异步写回，
+    // 进吧/重启后都记得上次的选择。
+    var pinnedExpanded by rememberSaveable(forumName) {
+        mutableStateOf(context.dataStore.getBoolean("${forumName}_pinned_expanded", true))
+    }
     val hasPinnedSection = pinned.isNotEmpty() || ruleTitle != null
 
     MyLazyColumn(
@@ -223,7 +233,10 @@ private fun ThreadList(
                     expanded = pinnedExpanded,
                     itemCount = pinned.size + if (ruleTitle != null) 1 else 0,
                     modifier = Modifier.fillMaxWidth(itemFraction),
-                    onToggle = { pinnedExpanded = !pinnedExpanded }
+                    onToggle = {
+                        pinnedExpanded = !pinnedExpanded
+                        context.dataStore.putBoolean("${forumName}_pinned_expanded", pinnedExpanded)
+                    }
                 )
             }
         }
