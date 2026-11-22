@@ -266,7 +266,7 @@ fun AppSplashOverlay() {
             ) {
                 // 1. 品牌英文大标 (动态字间距舒展)
                 Text(
-                    text = "FluxTie",
+                    text = "TiebaLite",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = brandLetterSpacing.sp,

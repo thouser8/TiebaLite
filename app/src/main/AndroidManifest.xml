@@ -361,7 +361,7 @@
             android:name=".receivers.SignTriggerReceiver"
             android:exported="true">
             <intent-filter>
-                <action android:name="com.makise.fluxtie.action.TRIGGER_SIGN" />
+                <action android:name="com.thouser8.tiebalite.action.TRIGGER_SIGN" />
             </intent-filter>
         </receiver>
 

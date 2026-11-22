@@ -88,7 +88,7 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-private const val REPO_URL = "https://github.com/makise2060/FluxTie"
+private const val REPO_URL = "https://github.com/thouser8/TiebaLite"
 
 /** 问题反馈邮箱（GitHub 访问不便时的兜底渠道） */
 private const val FEEDBACK_EMAIL = "makise2060@gmail.com"
@@ -220,7 +220,7 @@ fun AboutPage(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "FluxTie",
+                            text = "TiebaLite",
                             style = MaterialTheme.typography.h4,
                             fontWeight = FontWeight.Black
                         )
@@ -351,7 +351,7 @@ fun AboutPage(
                     SettingRow(
                         icon = Icons.Rounded.Report,
                         title = stringResource(id = R.string.title_feedback_github_issue),
-                        summary = "makise2060/FluxTie",
+                        summary = "thouser8/TiebaLite",
                         trailing = {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.ArrowForward,

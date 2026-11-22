@@ -16,7 +16,7 @@ import java.util.Calendar
  *  未登录、今天已签（`signDay` 在 startSign 内写入）、非本应用 action 均直接忽略，
  *  恶意反复拉起最多完成一次签到，不会产生重复请求。
  *
- *  用法：`adb shell am broadcast -a com.makise.fluxtie.action.TRIGGER_SIGN -p com.makise.fluxtie`
+ *  用法：`adb shell am broadcast -a com.thouser8.tiebalite.action.TRIGGER_SIGN -p com.thouser8.tiebalite`
  */
 class SignTriggerReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -35,6 +35,6 @@ class SignTriggerReceiver : BroadcastReceiver() {
 
     companion object {
         val TAG: String = "SignTrigger"
-        const val ACTION_TRIGGER_SIGN = "com.makise.fluxtie.action.TRIGGER_SIGN"
+        const val ACTION_TRIGGER_SIGN = "com.thouser8.tiebalite.action.TRIGGER_SIGN"
     }
 }

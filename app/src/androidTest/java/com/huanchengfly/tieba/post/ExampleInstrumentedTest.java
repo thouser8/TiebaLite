@@ -19,6 +19,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = ApplicationProvider.getApplicationContext();
 
-        assertEquals("com.makise.fluxtie", appContext.getPackageName());
+        assertEquals("com.thouser8.tiebalite", appContext.getPackageName());
     }
 }

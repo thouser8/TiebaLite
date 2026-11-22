@@ -62,7 +62,7 @@ android {
     buildToolsVersion = "36.0.0"
     compileSdk = 37
     defaultConfig {
-        applicationId = "com.makise.fluxtie"
+        applicationId = "com.thouser8.tiebalite"
         minSdk = 23
         //noinspection OldTargetApi
         targetSdk = 37
