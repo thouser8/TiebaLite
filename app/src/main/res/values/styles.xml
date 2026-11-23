@@ -169,18 +169,16 @@
         <item name="dialogCornerRadius">@dimen/radius</item>
     </style>
 
-    <style name="Theme.Splash" parent="Theme.SplashScreen">
-        <item name="android:windowBackground">@drawable/splash</item>
-        <!-- 状态栏/导航栏与启动屏背景同色：避免部分 ROM 上系统启动屏阶段
-             透明状态栏露出系统黑底（issue #34「开屏 logo 无沉浸」） -->
+    <!-- 启动主题：不再继承 Theme.SplashScreen，也不再声明任何 windowSplashScreen* 属性。
+         Android 12+ 强制绘制的系统启动窗口用与 AppSplash 首帧同色的纯色背景顶上，
+         不显示图标/logo，视觉完全由应用内 AppSplashOverlay 接管，
+         避免「系统启动遮罩 → 应用启动动画」两段跳（原 issue #34 的另一半成因）。 -->
+    <style name="Theme.Splash" parent="Theme.NewAppTheme">
+        <item name="android:windowBackground">@color/colorSplashBg</item>
         <item name="android:statusBarColor">@color/colorSplashBg</item>
         <item name="android:navigationBarColor">@color/colorSplashBg</item>
         <!-- 白天启动屏浅色底 + 深色状态栏图标；夜间由 values-night 覆盖 -->
         <item name="android:windowLightStatusBar">true</item>
-        <item name="windowSplashScreenBackground">@color/colorSplashBg</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_screen_anim</item>
-        <item name="windowSplashScreenAnimationDuration">1000</item>
-        <item name="postSplashScreenTheme">@style/Theme.NewAppTheme</item>
     </style>
 
     <style name="Base.AppTheme" parent="Theme.MaterialComponents.Light.NoActionBar">

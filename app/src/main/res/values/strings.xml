@@ -542,6 +542,11 @@
     <string name="pull_to_load">继续上拉加载</string>
     <string name="release_to_load">松开加载</string>
     <string name="title_block_list">屏蔽词管理</string>
+    <string name="title_block_backup_section">备份与还原</string>
+    <string name="title_block_backup">备份屏蔽规则</string>
+    <string name="summary_block_backup">导出为 .tbrules 文件，含关键词与用户规则</string>
+    <string name="title_block_restore">从备份还原</string>
+    <string name="summary_block_restore">导入 .tbrules 文件，覆盖现有全部屏蔽规则</string>
     <string name="settings_hide_blocked_content">彻底隐藏被屏蔽的内容</string>
     <string name="settings_block_video_summary">隐藏动态页面和吧页面的所有视频贴</string>
     <string name="settings_show_followed_only">只推荐已关注的吧</string>

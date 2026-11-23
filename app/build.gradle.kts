@@ -251,7 +251,6 @@ dependencies {
     implementation(libs.androidx.browser)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core)
-    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.gridlayout)
     implementation(libs.androidx.palette)

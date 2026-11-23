@@ -65,7 +65,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -427,17 +426,6 @@ class MainActivityV2 : BaseComposeActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val splashScreen = installSplashScreen()
-        splashScreen.setOnExitAnimationListener { splashScreenViewProvider ->
-            com.huanchengfly.tieba.post.ui.widgets.compose.SplashState.markSystemSplashDismissed()
-            splashScreenViewProvider.view.animate()
-                .alpha(0f)
-                .setDuration(240L)
-                .withEndAction {
-                    splashScreenViewProvider.remove()
-                }
-                .start()
-        }
         super.onCreate(savedInstanceState)
         StartupMetrics.mark("activity_created")
         window.decorView.setBackgroundColor(0)

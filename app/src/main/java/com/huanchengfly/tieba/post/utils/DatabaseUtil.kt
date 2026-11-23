@@ -13,6 +13,7 @@ import com.huanchengfly.tieba.post.models.database.MemeEmoticon
 import com.huanchengfly.tieba.post.models.database.SearchHistory
 import com.huanchengfly.tieba.post.models.database.SearchPostHistory
 import com.huanchengfly.tieba.post.models.database.TopForum
+import androidx.room.withTransaction
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.Flow
 
@@ -62,6 +63,20 @@ object DatabaseUtil {
     suspend fun insertBlock(block: Block): Long = appDatabase.blockDao().insert(block)
 
     suspend fun deleteBlockById(id: Long) = appDatabase.blockDao().deleteById(id)
+
+    /**
+     * 用 [blocks] 完整替换屏蔽规则表（备份还原用），返回写库后的实际数据（含自增 id）。
+     * 整个过程在事务内完成，避免中途失败把规则清空。
+     */
+    suspend fun replaceAllBlocks(blocks: List<Block>): List<Block> =
+        appDatabase.withTransaction {
+            val dao = appDatabase.blockDao()
+            dao.deleteAll()
+            if (blocks.isNotEmpty()) {
+                dao.insertAll(blocks)
+            }
+            dao.getAll()
+        }
 
     // ── Draft ───────────────────────────────────────────────────
     suspend fun getDraft(hash: String): Draft? = appDatabase.draftDao().getByHash(hash)

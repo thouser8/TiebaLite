@@ -46,6 +46,27 @@ object BlockManager {
         blockList.removeAll { it.id == id }
     }
 
+    /** 当前全部规则（备份导出用，按库内容为准） */
+    suspend fun getAllBlocks(): List<Block> = DatabaseUtil.getAllBlocks()
+
+    /**
+     * 用 [blocks] 覆盖全部规则（备份还原用），并同步内存缓存。
+     * 返回写库后的实际数据（含新的自增 id）。
+     */
+    suspend fun replaceAllBlocks(blocks: List<Block>): List<Block> {
+        val saved = DatabaseUtil.replaceAllBlocks(blocks)
+        blockList.clear()
+        blockList.addAll(saved)
+        return saved
+    }
+
+    /** 从数据库重新载入缓存（多端写入后同步用） */
+    suspend fun reload() {
+        val all = DatabaseUtil.getAllBlocks()
+        blockList.clear()
+        blockList.addAll(all)
+    }
+
     suspend fun init() {
         blockList.addAll(DatabaseUtil.getAllBlocks())
     }
