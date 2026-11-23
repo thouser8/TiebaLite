@@ -46,7 +46,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.BlockManager
 import com.huanchengfly.tieba.post.utils.BlockRuleBackupUtil
-import com.huanchengfly.tieba.post.utils.RestoreResult
+import com.huanchengfly.tieba.post.utils.BackupFile
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.Dispatchers
@@ -61,8 +61,8 @@ fun BlockSettingsPage(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var pendingRestore by remember { mutableStateOf<RestoreResult?>(null) }
-    val restoreDialogState = rememberDialogState()
+    var pendingImport by remember { mutableStateOf<PendingImport?>(null) }
+    val importDialogState = rememberDialogState()
 
     // 导出：让用户选择一个目标文件，直接写入 .tbrules（zip）内容
     val exportLauncher = rememberLauncherForActivityResult(
@@ -89,7 +89,7 @@ fun BlockSettingsPage(
         }
     }
 
-    // 导入：先解析成内存规则，确认后再覆盖，避免误触直接清空现有规则
+    // 导入：自动识别 .tbrules 与 Oolong 规则 JSON，先解析成内存规则，确认后再写库
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
@@ -99,16 +99,37 @@ fun BlockSettingsPage(
                 runCatching {
                     val stream = context.contentResolver.openInputStream(uri)
                         ?: throw IllegalStateException("无法读取所选文件")
-                    stream.use { BlockRuleBackupUtil.restore(it) }
+                    stream.use { BlockRuleBackupUtil.readBackup(it) }
                 }
             }
-            parsed.onSuccess {
-                pendingRestore = it
-                restoreDialogState.show()
+            parsed.onSuccess { file ->
+                pendingImport = when (file) {
+                    is BackupFile.TbRules -> PendingImport(
+                        blocks = file.result.blocks,
+                        keywordCount = file.result.keywordCount,
+                        userCount = file.result.userCount,
+                        merge = false,
+                        fromOolong = false,
+                        notes = if (file.result.hasForumRules) {
+                            listOf("备份中含吧规则，本版不支持吧屏蔽，该部分已忽略。")
+                        } else {
+                            emptyList()
+                        },
+                    )
+                    is BackupFile.Oolong -> PendingImport(
+                        blocks = file.result.blocks,
+                        keywordCount = file.result.keywordCount,
+                        userCount = file.result.userCount,
+                        merge = true,
+                        fromOolong = true,
+                        notes = file.result.notes,
+                    )
+                }
+                importDialogState.show()
             }.onFailure {
                 Toast.makeText(
                     context,
-                    "读取备份失败：${it.message ?: "文件格式不正确"}",
+                    "读取规则文件失败：${it.message ?: "文件格式不正确"}",
                     Toast.LENGTH_LONG
                 ).show()
             }
@@ -116,38 +137,67 @@ fun BlockSettingsPage(
     }
 
     ConfirmDialog(
-        dialogState = restoreDialogState,
-        title = { Text(text = stringResource(id = R.string.title_block_restore)) },
+        dialogState = importDialogState,
+        title = {
+            Text(
+                text = if (pendingImport?.fromOolong == true) "导入 Oolong 规则"
+                else stringResource(id = R.string.title_block_restore)
+            )
+        },
         onConfirm = {
-            val result = pendingRestore ?: return@ConfirmDialog
+            val pending = pendingImport ?: return@ConfirmDialog
             scope.launch {
-                val done = runCatching {
-                    withContext(Dispatchers.IO) { BlockManager.replaceAllBlocks(result.blocks) }
+                if (pending.merge) {
+                    val done = runCatching {
+                        withContext(Dispatchers.IO) { BlockManager.mergeBlocks(pending.blocks) }
+                    }
+                    Toast.makeText(
+                        context,
+                        done.fold(
+                            onSuccess = { summary ->
+                                "已导入 ${summary.keywordCount} 条关键词、${summary.userCount} 条用户规则" +
+                                        if (summary.skippedCount > 0) "，跳过重复 ${summary.skippedCount} 条" else ""
+                            },
+                            onFailure = { "导入失败：${it.message ?: "未知错误"}" }
+                        ),
+                        Toast.LENGTH_LONG
+                    ).show()
+                } else {
+                    val done = runCatching {
+                        withContext(Dispatchers.IO) { BlockManager.replaceAllBlocks(pending.blocks) }
+                    }
+                    Toast.makeText(
+                        context,
+                        done.fold(
+                            onSuccess = { saved ->
+                                "已还原 ${saved.count { it.type == Block.TYPE_KEYWORD }} 条关键词、" +
+                                        "${saved.count { it.type == Block.TYPE_USER }} 条用户规则"
+                            },
+                            onFailure = { "还原失败：${it.message ?: "未知错误"}" }
+                        ),
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
-                Toast.makeText(
-                    context,
-                    done.fold(
-                        onSuccess = { saved ->
-                            "已还原 ${saved.count { it.type == Block.TYPE_KEYWORD }} 条关键词、" +
-                                    "${saved.count { it.type == Block.TYPE_USER }} 条用户规则"
-                        },
-                        onFailure = { "还原失败：${it.message ?: "未知错误"}" }
-                    ),
-                    Toast.LENGTH_LONG
-                ).show()
+                pendingImport = null
             }
         },
-        onDismiss = { pendingRestore = null },
-        onCancel = { pendingRestore = null },
+        onDismiss = { pendingImport = null },
+        onCancel = { pendingImport = null },
     ) {
-        pendingRestore?.let { result ->
+        pendingImport?.let { pending ->
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "将用备份中的 ${result.keywordCount} 条关键词、${result.userCount} 条用户规则" +
-                            "覆盖当前全部屏蔽规则，此操作不可撤销。"
+                    text = if (pending.fromOolong) {
+                        "将从 Oolong 规则文件导入 ${pending.keywordCount} 条关键词、" +
+                                "${pending.userCount} 条用户规则，合并到现有屏蔽规则中" +
+                                "（与现有规则重复的自动跳过）。"
+                    } else {
+                        "将用备份中的 ${pending.keywordCount} 条关键词、${pending.userCount} 条用户规则" +
+                                "覆盖当前全部屏蔽规则，此操作不可撤销。"
+                    }
                 )
-                if (result.hasForumRules) {
-                    Text(text = "备份中含吧规则，本版不支持吧屏蔽，该部分已忽略。")
+                pending.notes.forEach { note ->
+                    Text(text = "· $note")
                 }
             }
         }
@@ -241,3 +291,17 @@ fun BlockSettingsPage(
         }
     }
 }
+
+/**
+ * 待确认的导入任务。
+ *
+ * [merge] 为 true 时合并进现有规则（Oolong 规则导入），否则整体覆盖（本版 .tbrules 备份）。
+ */
+private data class PendingImport(
+    val blocks: List<Block>,
+    val keywordCount: Int,
+    val userCount: Int,
+    val merge: Boolean,
+    val fromOolong: Boolean,
+    val notes: List<String>,
+)

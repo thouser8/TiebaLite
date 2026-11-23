@@ -5,6 +5,8 @@ import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.models.database.Block.Companion.getKeywords
 import com.huanchengfly.tieba.post.toJson
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 import java.text.SimpleDateFormat
@@ -129,6 +131,40 @@ object BlockRuleBackupUtil {
             version = version,
         )
     }
+
+    /**
+     * 读取任意受支持的规则文件：zip 容器（`.tbrules`）或 Oolong 导出的规则 JSON。
+     * 按文件头（`PK` / `{` / `[`）自动判断，调用方无需让用户区分来源。
+     *
+     * @throws IllegalStateException 文件损坏或不是受支持的格式
+     */
+    fun readBackup(input: InputStream): BackupFile {
+        val bytes = input.readAtMost(MAX_BACKUP_BYTES)
+        if (bytes.size >= 2 && bytes[0] == 'P'.code.toByte() && bytes[1] == 'K'.code.toByte()) {
+            return BackupFile.TbRules(restore(ByteArrayInputStream(bytes)))
+        }
+        val text = String(bytes, Charsets.UTF_8).removePrefix("\uFEFF")
+        if (text.isBlank()) throw IllegalStateException("文件为空")
+        if (!OolongRuleImportUtil.looksLikeOolong(text)) {
+            throw IllegalStateException("无法识别的文件格式，仅支持 .tbrules 备份或 Oolong 规则 JSON")
+        }
+        return BackupFile.Oolong(OolongRuleImportUtil.import(text))
+    }
+
+    /** 限制读入体积，避免误选大文件时把内存吃满 */
+    private fun InputStream.readAtMost(limit: Int): ByteArray {
+        val out = ByteArrayOutputStream()
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        while (true) {
+            val read = read(buffer)
+            if (read < 0) break
+            if (out.size() + read > limit) throw IllegalStateException("文件过大，不像是规则备份")
+            out.write(buffer, 0, read)
+        }
+        return out.toByteArray()
+    }
+
+    private const val MAX_BACKUP_BYTES = 32 * 1024 * 1024
 
     // ── 写 ──────────────────────────────────────────────────────
 
@@ -290,4 +326,13 @@ data class RestoreResult(
     val version: Int?,
 ) {
     val total: Int get() = keywordCount + userCount
+}
+
+/** 自动识别后的备份内容 */
+sealed interface BackupFile {
+    /** `.tbrules`（zip 容器） */
+    data class TbRules(val result: RestoreResult) : BackupFile
+
+    /** Oolong 导出的规则 JSON */
+    data class Oolong(val result: OolongImportResult) : BackupFile
 }

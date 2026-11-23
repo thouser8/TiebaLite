@@ -21,5 +21,11 @@ data class Block @JvmOverloads constructor(
         const val TYPE_KEYWORD = 0
         const val TYPE_USER = 1
         fun Block.getKeywords(): List<String> = keywords?.fromJson() ?: emptyList()
+
+        /** 判断两条规则是否等价的键（备份导入去重用），忽略自增 id */
+        fun Block.ruleKey(): String = when (type) {
+            TYPE_USER -> "$category|u|${uid.orEmpty()}|${username.orEmpty()}"
+            else -> "$category|k|$isRegex|${getKeywords().joinToString("\u0001")}"
+        }
     }
 }

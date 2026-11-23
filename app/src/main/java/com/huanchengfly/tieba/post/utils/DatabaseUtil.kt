@@ -62,6 +62,9 @@ object DatabaseUtil {
 
     suspend fun insertBlock(block: Block): Long = appDatabase.blockDao().insert(block)
 
+    /** 批量追加规则（合并导入用） */
+    suspend fun insertBlocks(blocks: List<Block>) = appDatabase.blockDao().insertAll(blocks)
+
     suspend fun deleteBlockById(id: Long) = appDatabase.blockDao().deleteById(id)
 
     /**
