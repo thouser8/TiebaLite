@@ -45,7 +45,7 @@ object OolongRuleImportUtil {
      *
      * @throws IllegalStateException 文件结构不是 Oolong 备份
      */
-    fun import(text: String, now: Long = System.currentTimeMillis()): OolongImportResult {
+    fun parse(text: String, now: Long = System.currentTimeMillis()): OolongImportResult {
         val root = GsonUtil.getGson().fromJson(text, JsonElement::class.java)
             ?: throw IllegalStateException("不是有效的 JSON 文件")
 

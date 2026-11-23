@@ -148,7 +148,7 @@ object BlockRuleBackupUtil {
         if (!OolongRuleImportUtil.looksLikeOolong(text)) {
             throw IllegalStateException("无法识别的文件格式，仅支持 .tbrules 备份或 Oolong 规则 JSON")
         }
-        return BackupFile.Oolong(OolongRuleImportUtil.import(text))
+        return BackupFile.Oolong(OolongRuleImportUtil.parse(text))
     }
 
     /** 限制读入体积，避免误选大文件时把内存吃满 */
