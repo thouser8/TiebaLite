@@ -70,6 +70,16 @@ jobs:
           name: "release-${{ env.version_name }}(${{ env.version_code }})"
           path: ./app/build/outputs/apk/release
 
+      # 滚动 Release 用固定文件名，保证下载地址长期有效并覆盖上一版
+      - name: Prepare stable-named APK
+        if: ${{ ! startsWith(github.ref, 'refs/tags/') }}
+        run: |
+          mkdir -p dist
+          SRC=$(ls ./app/build/outputs/apk/release/*.apk | head -1)
+          cp "$SRC" dist/TiebaLite-latest.apk
+          echo "APK_NAME=$(basename "$SRC" .apk)" >> "$GITHUB_ENV"
+          ls -l dist
+
       # 手动/每周自动构建（非 tag）发布到滚动 Release：手机端无需登录即可下载 APK，
       # 同名产物每次构建覆盖，只保留最新一版。
       - name: Publish to rolling release
@@ -82,10 +92,10 @@ jobs:
           body: |
             由 GitHub Actions 自动构建，commit `${{ github.sha }}`
 
+            - 版本：${{ env.APK_NAME }}
             - 构建方式：${{ github.event_name }}
-            - 签名固定，可直接覆盖安装后续构建（含官方原作与上一版本 fork）
-            - 版本号见 APK 文件名
-          files: ./app/build/outputs/apk/release/*.apk
+            - 签名固定，可直接覆盖安装后续构建
+          files: ./dist/TiebaLite-latest.apk
 
       - name: Upload Release Package to public
         uses: softprops/action-gh-release@v3
