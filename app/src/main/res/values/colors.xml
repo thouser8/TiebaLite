@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_new_background">#FFF4F7FC</color>
+    <!-- 默认启动图标（ic_launcher_new）专用底色：与图标素材白底一致，避免出现圆环边界 -->
+    <color name="ic_launcher_new_mark_background">#FFFFFFFF</color>
     <color name="ic_launcher_new_invert_background">#FFFFFFFF</color>
     <color name="ic_launcher_background">#FF2E60B0</color>
 
