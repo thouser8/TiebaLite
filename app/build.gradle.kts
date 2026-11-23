@@ -153,7 +153,7 @@ androidComponents {
     onVariants { variant ->
         variant.outputs.forEach { output ->
             output.outputFileName.set(
-                "FluxTie-v${applicationVersionName}.apk"
+                "TiebaLite-v${applicationVersionName}.apk"
             )
         }
     }

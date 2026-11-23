@@ -172,7 +172,7 @@ class UpdateManager @Inject constructor(
             return
         }
         // 已有同名安装包直接复用（如静默下载完成后再点「安装」/重进弹窗场景）
-        val fileName = "FluxTie-v${release.version}.apk"
+        val fileName = "TiebaLite-v${release.version}.apk"
         downloader.cachedApk(fileName)?.let { cached ->
             _state.value = UpdateUiState.Downloaded(release, cached)
             notification.showComplete()
@@ -295,6 +295,6 @@ class UpdateManager @Inject constructor(
 
     companion object {
         const val EXTRA_INSTALL_UPDATE = "update_install"
-        private const val RELEASES_URL = "https://github.com/makise2060/FluxTie/releases"
+        private const val RELEASES_URL = "https://github.com/thouser8/TiebaLite/releases"
     }
 }
