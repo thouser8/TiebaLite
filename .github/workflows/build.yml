@@ -88,7 +88,8 @@ jobs:
         with:
           tag_name: latest
           name: TiebaLite 最新构建
-          prerelease: true
+          prerelease: false
+          make_latest: true
           body: |
             由 GitHub Actions 自动构建，commit `${{ github.sha }}`
 
